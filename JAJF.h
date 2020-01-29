@@ -28,22 +28,22 @@ namespace JAJF
         void EraseData();
 
         //Parse an object, returns a JSONObject
-        JSONObject Parse(const char* data, long length, int& x, int& y, const char** newPointer = nullptr) const;
+        JSONObject Parse(const char* data, long length, int& x, int& y, const char* file, const char** newPointer = nullptr) const;
 
         //Parse an array, returns a JSONObject (array type)
-        JSONObject ParseArray(const char* data, long length, int& x, int& y, const char** newPointer = nullptr) const;
+        JSONObject ParseArray(const char* data, long length, int& x, int& y, const char* file, const char** newPointer = nullptr) const;
 
         //Get a string by parsing
         const std::string GetString(const char*& start, int& x, int& y) const;
 
         //Get a string by parsing
-        const std::string GetNumber(const char*& start, int& x, int& y) const;
+        const std::string GetNumber(const char*& start, int& x, int& y, const char* fileName = nullptr) const;
 
         //Ignores and skips past whitespace characters
         void SkipWhitespace(const char*& pointer, int& x, int& y) const;
 
         //Throws out errors
-        void ThrowError(const char* title, const char* errorMSG) const;
+        void ThrowError(const char* title, const char* errorMSG, const char* fileName = nullptr) const;
 
         //Converts the object tree into a formatted string
         const std::string Stringify(int& tabbing, bool isArray = false) const;
