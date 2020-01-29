@@ -108,7 +108,7 @@ namespace JAJF
         return value_bool;
     }
 
-    JSONObject JSONObject::ParseArray(const char* data, long length, int& x, int& y, const char** newPointer) const
+    JSONObject JSONObject::ParseArray(const char* data, long length, int& x, int& y, const char* file, const char** newPointer) const
     {
         const char* pointer = data;
         JSONObject object;
@@ -117,7 +117,7 @@ namespace JAJF
         while (*pointer != ']')
         {
             if (requireComma && *pointer != ',')
-                ThrowError("JAJF PARSE ERROR", (std::string("Missing comma at:\nLine: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str());
+                ThrowError("JAJF PARSE ERROR", (std::string("Missing comma at:\nLine: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str(), file);
             else if (requireComma && *pointer == ',')
             {
                 requireComma = false;
@@ -145,7 +145,7 @@ namespace JAJF
                     //We have an object
                     ++pointer;
                     ++x;
-                    object[index] = Parse(pointer, length, x, y, &pointer);
+                    object[index] = Parse(pointer, length, x, y, file, &pointer);
                     ++index;
                 }
                 else if (*pointer == '[')
@@ -153,7 +153,7 @@ namespace JAJF
                     //We have an array
                     ++pointer;
                     ++x;
-                    object[index] = ParseArray(pointer, length, x, y, &pointer);
+                    object[index] = ParseArray(pointer, length, x, y, file, &pointer);
                     ++pointer;
                     ++x;
                     ++index;
@@ -173,13 +173,13 @@ namespace JAJF
         return object;
     }
 
-    JSONObject JSONObject::Parse(const char* data, long length, int& x, int& y, const char** newPointer) const
+    JSONObject JSONObject::Parse(const char* data, long length, int& x, int& y, const char* file, const char** newPointer) const
     {
         if (*data == '{')
             ++data;
-        auto distance = [&](const char* buffer, const char* pointer) -> long
+        auto distance = [&](const char* buffer, const char* pointer) -> signed long
         {
-            return (long)(buffer - pointer);
+            return (signed long)(buffer - pointer);
         };
 
         JSONObject object;
@@ -188,6 +188,8 @@ namespace JAJF
         {
             ++x;
             SkipWhitespace(pointer, x, y);
+            if (distance(data + length, pointer) <= 0)
+                break;
 
             switch (*pointer)
             {
@@ -226,14 +228,14 @@ namespace JAJF
                             //We have an object
                             ++pointer;
                             ++x;
-                            object[keyName] = Parse(pointer, length, x, y, &pointer);
+                            object[keyName] = Parse(pointer, length, x, y, file, &pointer);
                         }
                         else if (*pointer == '[')
                         {
                             //We have an array
                             ++pointer;
                             ++x;
-                            object[keyName] = ParseArray(pointer, length, x, y, &pointer);
+                            object[keyName] = ParseArray(pointer, length, x, y, file, &pointer);
                             ++pointer;
                             ++x;
                         }
@@ -249,9 +251,7 @@ namespace JAJF
                 }
                 else
                 {
-                    //Throw
-                    ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nExpected ':' got '") + *pointer + "'\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str());
-
+                    ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nExpected ':' got '") + *pointer + "'\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str(), file);
                 }
                 break;
             }
@@ -259,7 +259,7 @@ namespace JAJF
                 if (requireComma)
                     requireComma = false;
                 else
-                    ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nExpected Value, got ','\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str()));
+                    ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nExpected Value, got ','\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str()), file);
 
                 break;
 
@@ -272,11 +272,12 @@ namespace JAJF
                 break;
             default:
                 if (*pointer > 32)
-                    ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character '") + *pointer + "'!\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str());
+                    ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character '") + *pointer + "'!\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str(), file);
 
             }
         }
-        return JSONObject();
+        ThrowError("JAJF PARSE ERROR", "Unexpected end of line!", file);
+        return object;
     }
 
     const std::string JSONObject::GetString(const char*& start, int& x, int& y) const
@@ -294,7 +295,7 @@ namespace JAJF
         return name;
     }
 
-    const std::string JSONObject::GetNumber(const char*& start, int& x, int& y) const
+    const std::string JSONObject::GetNumber(const char*& start, int& x, int& y, const char* fileName) const
     {
         std::string number;
         bool negative = false;
@@ -308,7 +309,7 @@ namespace JAJF
         while ((*start >= '0' && *start <= '9') || *start == '.')
         {
             if (*start == '.' && decimalUsed)
-                ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nExpected 0-9 got '.'\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str()));
+                ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nExpected 0-9 got '.'\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str()), fileName);
 
             else if (*start == '.' && !decimalUsed)
                 decimalUsed = true;
@@ -345,12 +346,18 @@ namespace JAJF
         }
     }
 
-    void JSONObject::ThrowError(const char* title, const char* errorMSG) const
+    void JSONObject::ThrowError(const char* title, const char* errorMSG, const char* fileName) const
     {
         if (!bThrowErrors)
             return;
 
-        if (MessageBox(NULL, errorMSG, title, MB_OKCANCEL | MB_ICONERROR) == IDCANCEL)
+        bool result = false;
+        if (fileName)
+            result = MessageBox(NULL, (std::string("File: ") + fileName + "\n" + errorMSG).c_str(), title, MB_OKCANCEL | MB_ICONERROR) == IDCANCEL;
+        else
+            result = MessageBox(NULL, errorMSG, title, MB_OKCANCEL | MB_ICONERROR) == IDCANCEL;
+
+        if (result)
         {
             exit(1);
         }
@@ -369,9 +376,13 @@ namespace JAJF
             fread_s((void*)buffer, length, length, 1, file);
             fclose(file);
             int x = 1, y = 1;
-            *this = Parse(buffer, length, x, y);
+            *this = Parse(buffer, length, x, y, path);
             delete[] buffer;
             return true;
+        }
+        else
+        {
+            ThrowError("JAJF READ ERROR", "Error reading file!", path);
         }
         return false;
     }
@@ -442,6 +453,10 @@ namespace JAJF
             char* buffer = (char*)str.c_str();
             int succ = fwrite(buffer, str.length(), 1, file);
             fclose(file);
+        }
+        else
+        {
+            ThrowError("JAJF WRITE ERROR", "Error writing to file!", path);
         }
     }
 
