@@ -165,8 +165,11 @@ namespace JAJF
                     ++index;
                 }
             }
-            ++pointer;
-            ++x;
+            if (*pointer == ',')
+            {
+                ++pointer;
+                ++x;
+            }
             SkipWhitespace(pointer, x, y);
         }
         *newPointer = pointer;
@@ -175,8 +178,6 @@ namespace JAJF
 
     JSONObject JSONObject::Parse(const char* data, long length, int& x, int& y, const char* file, const char** newPointer) const
     {
-        if (*data == '{')
-            ++data;
         auto distance = [&](const char* buffer, const char* pointer) -> signed long
         {
             return (signed long)(buffer - pointer);
@@ -184,7 +185,7 @@ namespace JAJF
 
         JSONObject object;
         bool requireComma = false;
-        for (const char* pointer = data; distance(data + length, pointer) > 0; ++pointer)
+        for (const char* pointer = data + (*data == '{' ? 1 : 0); distance(data + length, pointer) > 0; ++pointer)
         {
             ++x;
             SkipWhitespace(pointer, x, y);
