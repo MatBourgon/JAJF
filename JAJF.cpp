@@ -51,7 +51,7 @@ namespace JAJF
 
         if ((int)objects.size() < index)
         {
-            for (int i = objects.size(); i < index; ++i)
+            for (int i = (int)objects.size(); i < index; ++i)
                 objects[std::to_string(i)];
         }
         objects[num];
@@ -71,6 +71,8 @@ namespace JAJF
             EraseData();
         bit_type = types_int;
         value_int = i;
+        value_double = (double)i;
+        value_bool = (i != 0);
     }
     void JSONObject::operator=(const double d)
     {
@@ -78,6 +80,8 @@ namespace JAJF
             EraseData();
         bit_type = types_double;
         value_double = d;
+        value_int = (int)d;
+        value_bool = (d != 0);
     }
     void JSONObject::operator=(const bool b)
     {
@@ -85,6 +89,8 @@ namespace JAJF
             EraseData();
         bit_type = types_bool;
         value_bool = b;
+        value_double = b ? 1.0 : 0.0;
+        value_int = b ? 1 : 0;
     }
     void JSONObject::operator=(const char* c)
     {
@@ -102,6 +108,10 @@ namespace JAJF
     template<> double JSONObject::Value() const
     {
         return value_double;
+    }
+    template<> float JSONObject::Value() const
+    {
+        return (float)value_double;
     }
     template<> bool JSONObject::Value() const
     {
@@ -302,7 +312,9 @@ namespace JAJF
         bool negative = false;
         if (*start == '-')
         {
+            //Redundant
             negative = true;
+            number += "-";
             ++start;
             ++x;
         }
@@ -464,6 +476,14 @@ namespace JAJF
     void JSONObject::SetThrowErrors(bool bThrowErrors)
     {
         JSONObject::bThrowErrors = bThrowErrors;
+    }
+
+    int JSONObject::GetArraySize() const
+    {
+        if (bit_type == types_array)
+            return (int)objects.size();
+        else
+            return 0;
     }
 
 }
