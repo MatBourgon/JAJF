@@ -48,6 +48,8 @@ namespace JAJF
         //Converts the object tree into a formatted string
         const std::string Stringify(int& tabbing, bool isArray = false) const;
 
+    public:
+
         //Types of data
         enum types_
         {
@@ -59,7 +61,8 @@ namespace JAJF
             types_object = 0b100000,
         };
 
-    public:
+        //Get object type (compare with JAJF::types_::*
+        unsigned char GetType() { return bit_type; };
 
         //Create an empty JSON Object
         JSONObject();
@@ -94,6 +97,30 @@ namespace JAJF
         //Set object to a string
         void operator=(const char* c);
 
+        template<typename T, typename ...Ts>
+        void AddToArray(T value, Ts...list)
+        {
+            if (bit_type != types_array)
+            {
+                EraseData();
+                bit_type = types_array;
+            }
+            operator[](GetArraySize()) = value;
+            AddToArray(list...);
+        }
+
+        //Set object to an array
+        template<typename T>
+        void AddToArray(T value)
+        {
+            if (bit_type != types_array)
+            {
+                EraseData();
+                bit_type = types_array;
+            }
+            operator[](GetArraySize()) = value;
+        }
+
         //Get the value stored in an object
         //Valid types:
         //int, double, bool, std::string
@@ -108,6 +135,9 @@ namespace JAJF
 
         //Enables/Disables error throwing
         void static SetThrowErrors(bool bThrowError);
+
+        //Get size of array (if its an array)
+        int GetArraySize() const;
 
     };
 };
