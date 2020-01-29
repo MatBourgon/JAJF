@@ -451,7 +451,7 @@ namespace JAJF
         if (file)
         {
             char* buffer = (char*)str.c_str();
-            int succ = fwrite(buffer, str.length(), 1, file);
+            fwrite(buffer, str.length(), 1, file);
             fclose(file);
         }
         else
