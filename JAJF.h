@@ -75,12 +75,21 @@ namespace JAJF
 
         //Check if an entry exists
         bool Exists(const std::string& key) const;
+        bool Exists(int index) const;
 
         //Get an object's entry by key
         JSONObject& operator[](const std::string& key);
+        JSONObject& Get(const std::string& key);
 
         //Get an array's entry by index
         JSONObject& operator[](int index);
+        JSONObject& Get(int index);
+
+        //Remove an entry in an object, and return a copy of it
+        JSONObject Remove(const std::string& key);
+
+        //Remove an entry in an array, and return a copy of it
+        JSONObject Remove(int index);
 
         //Set the object to a string
         void operator=(const std::string& s);
@@ -97,6 +106,7 @@ namespace JAJF
         //Set object to a string
         void operator=(const char* c);
 
+        //Set objects to an array
         template<typename T, typename ...Ts>
         void AddToArray(T value, Ts...list)
         {
@@ -105,7 +115,7 @@ namespace JAJF
                 EraseData();
                 bit_type = types_array;
             }
-            operator[](GetArraySize()) = value;
+            Get(GetArraySize()) = value;
             AddToArray(list...);
         }
 
@@ -118,12 +128,12 @@ namespace JAJF
                 EraseData();
                 bit_type = types_array;
             }
-            operator[](GetArraySize()) = value;
+            Get(GetArraySize()) = value;
         }
 
         //Get the value stored in an object
         //Valid types:
-        //int, double, bool, std::string
+        //int, double, bool, std::string, float
         template<typename T>
         T Value() const;
 
@@ -138,6 +148,30 @@ namespace JAJF
 
         //Get size of array (if its an array)
         int GetArraySize() const;
+
+        //JSONObject iterator
+        struct iterator
+        {
+            iterator(std::map<std::string, JSONObject>::iterator it);
+            iterator(const iterator& it);
+            iterator& operator=(const iterator& it);
+            iterator& operator++();
+            iterator& operator--();
+            iterator operator++(int);
+            iterator operator--(int);
+            bool operator==(const iterator& it);
+            bool operator!=(const iterator& it);
+            JSONObject& operator*();
+            JSONObject* operator->();
+        private:
+            std::map<std::string, JSONObject>::iterator it;
+        }; friend iterator;
+
+        //Iterator to the start of a JSONObject map
+        iterator begin();
+
+        //Iterator to the end of a JSONObject map
+        iterator end();
 
     };
 };

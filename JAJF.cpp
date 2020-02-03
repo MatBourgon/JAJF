@@ -23,9 +23,17 @@ namespace JAJF
     }
     bool JSONObject::Exists(const std::string& key) const
     {
-        return objects.find(key) != objects.end();
+        return bit_type == types_object && (objects.find(key) != objects.end());
+    }
+    bool JSONObject::Exists(int index) const
+    {
+        return bit_type == types_array && (objects.find(std::to_string(index)) != objects.end());
     }
     JSONObject& JSONObject::operator[](const std::string& key)
+    {
+        return Get(key);
+    }
+    JSONObject& JSONObject::Get(const std::string& key)
     {
         if (bit_type == types_array)
         {
@@ -39,6 +47,11 @@ namespace JAJF
         return objects[key];
     }
     JSONObject& JSONObject::operator[](int index)
+    {
+        return Get(index);
+
+    }
+    JSONObject& JSONObject::Get(int index)
     {
         if (bit_type == types_object)
         {
@@ -57,6 +70,26 @@ namespace JAJF
         objects[num];
         return objects[num];
 
+    }
+    JSONObject JSONObject::Remove(const std::string& key)
+    {
+        if (bit_type == types_object && Exists(key))
+        {
+            JSONObject obj = Get(key);
+            objects.erase(key);
+            return obj;
+        }
+        return JSONObject();
+    }
+    JSONObject JSONObject::Remove(int index)
+    {
+        if (bit_type == types_array && Exists(index))
+        {
+            JSONObject obj = Get(index);
+            objects.erase(std::to_string(index));
+            return obj;
+        }
+        return JSONObject();
     }
     void JSONObject::operator=(const std::string& s)
     {
@@ -182,7 +215,8 @@ namespace JAJF
             }
             SkipWhitespace(pointer, x, y);
         }
-        *newPointer = pointer;
+        if (newPointer)
+            *newPointer = pointer;
         return object;
     }
 
@@ -309,18 +343,27 @@ namespace JAJF
     const std::string JSONObject::GetNumber(const char*& start, int& x, int& y, const char* fileName) const
     {
         std::string number;
-        bool negative = false;
         if (*start == '-')
         {
-            //Redundant
-            negative = true;
             number += "-";
             ++start;
             ++x;
         }
+        bool eNotationUsed = false;
+        bool eSignUsed = false;
         bool decimalUsed = false;
-        while ((*start >= '0' && *start <= '9') || *start == '.')
+        while ((*start >= '0' && *start <= '9') || *start == '.' || *start == 'e' || *start == 'E' || *start == '-' || *start == '+')
         {
+            if ((*start == 'e' || *start == 'E') && eNotationUsed)
+                ThrowError("JAJF PARSE ERROR!", ((std::string("Unexpected character!\nOnly one instance of 'e' or 'E' permitted.\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str()), fileName);
+            else if ((*start == 'e' || *start == 'E') && !eNotationUsed)
+                eNotationUsed = true;
+
+            if ((*start == '-' || *start == '+') && (!eNotationUsed || eSignUsed))
+                ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str()), fileName);
+            else if ((*start == '-' || *start == '+') && (eNotationUsed && !eSignUsed))
+                eSignUsed = true;
+
             if (*start == '.' && decimalUsed)
                 ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nExpected 0-9 got '.'\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str()), fileName);
 
@@ -389,7 +432,10 @@ namespace JAJF
             fread_s((void*)buffer, length, length, 1, file);
             fclose(file);
             int x = 1, y = 1;
-            *this = Parse(buffer, length, x, y, path);
+            if (buffer[0] == '[')
+                *this = ParseArray(buffer+1, length, x, y, path);
+            else
+                *this = Parse(buffer, length, x, y, path);
             delete[] buffer;
             return true;
         }
@@ -484,6 +530,63 @@ namespace JAJF
             return (int)objects.size();
         else
             return 0;
+    }
+
+    JSONObject::iterator JSONObject::begin()
+    {
+        return iterator(objects.begin());
+    }
+
+    JSONObject::iterator JSONObject::end()
+    {
+        return iterator(objects.end());
+    }
+
+    //ITERATOR
+    JSONObject::iterator::iterator(std::map<std::string, JSONObject>::iterator it) : it(it) {}
+    JSONObject::iterator::iterator(const iterator& it) : it(it.it) {}
+    JSONObject::iterator& JSONObject::iterator::operator=(const JSONObject::iterator& it)
+    {
+        this->it = it.it;
+        return *this;
+    }
+    JSONObject::iterator& JSONObject::iterator::operator++()
+    {
+        ++it;
+        return *this;
+    }
+    JSONObject::iterator& JSONObject::iterator::operator--()
+    {
+        --it;
+        return *this;
+    }
+    JSONObject::iterator JSONObject::iterator::operator++(int)
+    {
+        iterator _it = *this;
+        ++it;
+        return _it;
+    }
+    JSONObject::iterator JSONObject::iterator::operator--(int)
+    {
+        iterator _it = *this;
+        --it;
+        return _it;
+    }
+    bool JSONObject::iterator::operator==(const iterator& it)
+    {
+        return it.it == this->it;
+    }
+    bool JSONObject::iterator::operator!=(const iterator& it)
+    {
+        return it.it != this->it;
+    }
+    JSONObject& JSONObject::iterator::operator*()
+    {
+        return it->second;
+    }
+    JSONObject* JSONObject::iterator::operator->()
+    {
+        return &it->second;
     }
 
 }
