@@ -1,4 +1,5 @@
-#pragma once
+#ifndef JAJF_H
+#define JAJF_H
 //Just Another JSON Format
 #include <map>
 #include <string>
@@ -62,7 +63,7 @@ namespace JAJF
         };
 
         //Get object type (compare with JAJF::types_::*
-        unsigned char GetType() { return bit_type; };
+        unsigned char GetType() { return bit_type; }
 
         //Create an empty JSON Object
         JSONObject();
@@ -140,6 +141,9 @@ namespace JAJF
         //Read JSON from a file on disk. Returns true if read was successful, false otherwise.
         bool ReadFromFile(const char* path);
 
+        //Read JSON from cstr. Returns true if read was successful, false otherwise
+        bool ReadFromString(const char* string, size_t length, const char* name = "Unknown");
+
         //Write JSON to file on disk.
         void WriteToFile(const char* path) const;
 
@@ -163,6 +167,8 @@ namespace JAJF
             bool operator!=(const iterator& it);
             JSONObject& operator*();
             JSONObject* operator->();
+            std::string key();
+            JSONObject& value();
         private:
             std::map<std::string, JSONObject>::iterator it;
         }; friend iterator;
@@ -175,3 +181,4 @@ namespace JAJF
 
     };
 };
+#endif

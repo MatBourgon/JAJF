@@ -207,6 +207,28 @@ namespace JAJF
                     object[index] = GetString(++pointer, ++x, y);
                     ++index;
                 }
+                else if (*pointer == 't')
+                {
+                    //We have 'true'
+                    if (pointer[1] == 'r' && pointer[2] == 'u' && pointer[3] == 'e')
+                    {
+                        object[index] = true;
+                        pointer += 4;
+                        x += 4;
+                        ++index;
+                    }
+                }
+                else if (*pointer == 'f')
+                {
+                    //We have 'false'
+                    if (pointer[1] == 'a' && pointer[2] == 'l' && pointer[3] == 's' && pointer[4] == 'e')
+                    {
+                        object[index] = false;
+                        pointer += 5;
+                        x += 5;
+                        ++index;
+                    }
+                }
             }
             if (*pointer == ',')
             {
@@ -288,6 +310,26 @@ namespace JAJF
                         {
                             //We have a string
                             object[keyName] = GetString(++pointer, ++x, y);
+                        }
+                        else if (*pointer == 't')
+                        {
+                            //We have 'true'
+                            if (pointer[1] == 'r' && pointer[2] == 'u' && pointer[3] == 'e')
+                            {
+                                object[keyName] = true;
+                                pointer += 4;
+                                x += 4;
+                            }
+                        }
+                        else if (*pointer == 'f')
+                        {
+                            //We have 'false'
+                            if (pointer[1] == 'a' && pointer[2] == 'l' && pointer[3] == 's' && pointer[4] == 'e')
+                            {
+                                object[keyName] = false;
+                                pointer += 5;
+                                x += 5;
+                            }
                         }
                     }
                     --pointer;
@@ -409,9 +451,9 @@ namespace JAJF
 
         bool result = false;
         if (fileName)
-            result = MessageBox(NULL, (std::string("File: ") + fileName + "\n" + errorMSG).c_str(), title, MB_OKCANCEL | MB_ICONERROR) == IDCANCEL;
+            result = MessageBoxA(NULL, (std::string("File: ") + fileName + "\n" + errorMSG).c_str(), title, MB_OKCANCEL | MB_ICONERROR) == IDCANCEL;
         else
-            result = MessageBox(NULL, errorMSG, title, MB_OKCANCEL | MB_ICONERROR) == IDCANCEL;
+            result = MessageBoxA(NULL, errorMSG, title, MB_OKCANCEL | MB_ICONERROR) == IDCANCEL;
 
         if (result)
         {
@@ -431,11 +473,7 @@ namespace JAJF
             const char* buffer = new char[length + 1]{ '\0' };
             fread_s((void*)buffer, length, length, 1, file);
             fclose(file);
-            int x = 1, y = 1;
-            if (buffer[0] == '[')
-                *this = ParseArray(buffer+1, length, x, y, path);
-            else
-                *this = Parse(buffer, length, x, y, path);
+            ReadFromString(buffer, length, path);
             delete[] buffer;
             return true;
         }
@@ -444,6 +482,16 @@ namespace JAJF
             ThrowError("JAJF READ ERROR", "Error reading file!", path);
         }
         return false;
+    }
+
+    bool JSONObject::ReadFromString(const char* string, size_t length, const char* name)
+    {
+        int x = 1, y = 1;
+        if (string[0] == '[')
+            *this = ParseArray(string+1, length, x, y, name);
+        else
+            *this = Parse(string, length, x, y, name);
+        return true;
     }
 
     const std::string JSONObject::Stringify(int& tabbing, bool isArray) const
@@ -587,6 +635,14 @@ namespace JAJF
     JSONObject* JSONObject::iterator::operator->()
     {
         return &it->second;
+    }
+    std::string JSONObject::iterator::key()
+    {
+        return it->first;
+    }
+    JSONObject& JSONObject::iterator::value()
+    {
+        return it->second;
     }
 
 }
