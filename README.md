@@ -25,6 +25,6 @@ Using storage variables aren't required, you can do everything in a single line,
 By default, JAJF comes with error throwing by default. If an invalid character is found in the file, it will throw an error that will let the user either quit or continue running the program (as well and the position it occured).
 To disable this feature, add this line of code before use (only required once): 
 
-    JAJF::SetThrowErrors(false);
+    JAJF::JSONObject::SetThrowErrors(false);
     
 Passing in true will result in the re-enabling of error throwing.
