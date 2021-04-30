@@ -260,106 +260,106 @@ namespace JAJF
 
             switch (*pointer)
             {
-            case '"':
-            {
-                if (requireComma)
-                    ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nExpected ',' got '") + *pointer + "'\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str());
+                case '"':
+                    {
+                        if (requireComma)
+                            ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nExpected ',' got '") + *pointer + "'\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str());
 
-                //Key or string
-                std::string keyName = GetString(++pointer, ++x, y);
-                if (object.Exists(keyName))
-                    ThrowError("JAJF PARSE ERROR", (std::string("Redefinition of variable!\nLine: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str());
+                        //Key or string
+                        std::string keyName = GetString(++pointer, ++x, y);
+                        if (object.Exists(keyName))
+                            ThrowError("JAJF PARSE ERROR", (std::string("Redefinition of variable!\nLine: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str());
 
-                SkipWhitespace(pointer, x, y);
-                if (*pointer == ':')
-                {
+                        SkipWhitespace(pointer, x, y);
+                        if (*pointer == ':')
+                        {
+                            ++pointer;
+                            ++x;
+                            SkipWhitespace(pointer, x, y);
+                            const std::string number = GetNumber(pointer, x, y);
+                            if (number.length() > 0)
+                            {
+                                //We have a number!
+                                if (number.find(".") != std::string::npos)
+                                    //We have a decimal
+                                    object[keyName] = std::stod(number);
+                                else
+                                    //We have an int
+                                    object[keyName] = std::stoi(number);
+                            }
+                            else
+                            {
+                                //We have a non-number
+                                if (*pointer == '{')
+                                {
+                                    //We have an object
+                                    ++pointer;
+                                    ++x;
+                                    object[keyName] = Parse(pointer, length, x, y, file, &pointer);
+                                }
+                                else if (*pointer == '[')
+                                {
+                                    //We have an array
+                                    ++pointer;
+                                    ++x;
+                                    object[keyName] = ParseArray(pointer, length, x, y, file, &pointer);
+                                    ++pointer;
+                                    ++x;
+                                }
+                                else if (*pointer == '"')
+                                {
+                                    //We have a string
+                                    object[keyName] = GetString(++pointer, ++x, y);
+                                }
+                                else if (*pointer == 't')
+                                {
+                                    //We have 'true'
+                                    if (pointer[1] == 'r' && pointer[2] == 'u' && pointer[3] == 'e')
+                                    {
+                                        object[keyName] = true;
+                                        pointer += 4;
+                                        x += 4;
+                                    }
+                                }
+                                else if (*pointer == 'f')
+                                {
+                                    //We have 'false'
+                                    if (pointer[1] == 'a' && pointer[2] == 'l' && pointer[3] == 's' && pointer[4] == 'e')
+                                    {
+                                        object[keyName] = false;
+                                        pointer += 5;
+                                        x += 5;
+                                    }
+                                }
+                            }
+                            --pointer;
+                            --x;
+                            requireComma = true;
+                        }
+                        else
+                        {
+                            ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nExpected ':' got '") + *pointer + "'\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str(), file);
+                        }
+                        break;
+                    }
+                case ',':
+                    if (requireComma)
+                        requireComma = false;
+                    else
+                        ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nExpected Value, got ','\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str()), file);
+
+                    break;
+
+                case '}':
                     ++pointer;
                     ++x;
-                    SkipWhitespace(pointer, x, y);
-                    const std::string number = GetNumber(pointer, x, y);
-                    if (number.length() > 0)
-                    {
-                        //We have a number!
-                        if (number.find(".") != std::string::npos)
-                            //We have a decimal
-                            object[keyName] = std::stod(number);
-                        else
-                            //We have an int
-                            object[keyName] = std::stoi(number);
-                    }
-                    else
-                    {
-                        //We have a non-number
-                        if (*pointer == '{')
-                        {
-                            //We have an object
-                            ++pointer;
-                            ++x;
-                            object[keyName] = Parse(pointer, length, x, y, file, &pointer);
-                        }
-                        else if (*pointer == '[')
-                        {
-                            //We have an array
-                            ++pointer;
-                            ++x;
-                            object[keyName] = ParseArray(pointer, length, x, y, file, &pointer);
-                            ++pointer;
-                            ++x;
-                        }
-                        else if (*pointer == '"')
-                        {
-                            //We have a string
-                            object[keyName] = GetString(++pointer, ++x, y);
-                        }
-                        else if (*pointer == 't')
-                        {
-                            //We have 'true'
-                            if (pointer[1] == 'r' && pointer[2] == 'u' && pointer[3] == 'e')
-                            {
-                                object[keyName] = true;
-                                pointer += 4;
-                                x += 4;
-                            }
-                        }
-                        else if (*pointer == 'f')
-                        {
-                            //We have 'false'
-                            if (pointer[1] == 'a' && pointer[2] == 'l' && pointer[3] == 's' && pointer[4] == 'e')
-                            {
-                                object[keyName] = false;
-                                pointer += 5;
-                                x += 5;
-                            }
-                        }
-                    }
-                    --pointer;
-                    --x;
-                    requireComma = true;
-                }
-                else
-                {
-                    ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nExpected ':' got '") + *pointer + "'\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str(), file);
-                }
-                break;
-            }
-            case ',':
-                if (requireComma)
-                    requireComma = false;
-                else
-                    ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character!\nExpected Value, got ','\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str()), file);
-
-                break;
-
-            case '}':
-                ++pointer;
-                ++x;
-                if (newPointer)
-                    * newPointer = pointer;
-                return object;
-                break;
-            default:
-                if (*pointer > 32)
-                    ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character '") + *pointer + "'!\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str(), file);
+                    if (newPointer)
+                        *newPointer = pointer;
+                    return object;
+                    break;
+                default:
+                    if (*pointer > 32)
+                        ThrowError("JAJF PARSE ERROR", ((std::string("Unexpected character '") + *pointer + "'!\nAt Line: ") + std::to_string(y) + " Col: " + std::to_string(x)).c_str(), file);
 
             }
         }
@@ -370,11 +370,19 @@ namespace JAJF
     const std::string JSONObject::GetString(const char*& start, int& x, int& y) const
     {
         std::string name;
-        while (*start != '"' && !(*(start - 1) == '\\' && *start == '"'))
+        while (*start != '"')
         {
             name += *start;
             ++start;
             ++x;
+
+            //Handle escaped characters
+            if (*(start-1)  == '\\' && *start == '"')
+            {
+                name += '"';
+                ++x;
+                ++start;
+            }
         }
         ++start;
         ++x;
@@ -488,7 +496,7 @@ namespace JAJF
     {
         int x = 1, y = 1;
         if (string[0] == '[')
-            *this = ParseArray(string+1, length, x, y, name);
+            *this = ParseArray(string + 1, length, x, y, name);
         else
             *this = Parse(string, length, x, y, name);
         return true;
@@ -517,27 +525,27 @@ namespace JAJF
 
             switch (pair.second.bit_type)
             {
-            case types_bool:
-                str += pair.second.value_bool ? "true" : "false";
-                break;
-            case types_string:
-                str += "\"" + pair.second.value_string + "\"";
-                break;
-            case types_int:
-                str += std::to_string(pair.second.value_int);
-                break;
-            case types_double:
-                str += std::to_string(pair.second.value_double);
-                break;
-            case types_object:
-                str += "\n" + pair.second.Stringify(tabbing, false);
-                break;
-            case types_array:
-                str += "\n" + pair.second.Stringify(tabbing, true);
-                break;
-            default:
-                ThrowError("JAJF STRINGIFY ERROR!", (std::string("Unknown type error!\nKey: ") + pair.first).c_str());
-                break;
+                case types_bool:
+                    str += pair.second.value_bool ? "true" : "false";
+                    break;
+                case types_string:
+                    str += "\"" + pair.second.value_string + "\"";
+                    break;
+                case types_int:
+                    str += std::to_string(pair.second.value_int);
+                    break;
+                case types_double:
+                    str += std::to_string(pair.second.value_double);
+                    break;
+                case types_object:
+                    str += "\n" + pair.second.Stringify(tabbing, false);
+                    break;
+                case types_array:
+                    str += "\n" + pair.second.Stringify(tabbing, true);
+                    break;
+                default:
+                    ThrowError("JAJF STRINGIFY ERROR!", (std::string("Unknown type error!\nKey: ") + pair.first).c_str());
+                    break;
             }
         }
         --tabbing;
