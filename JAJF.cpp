@@ -370,7 +370,7 @@ namespace JAJF
     const std::string JSONObject::GetString(const char*& start, int& x, int& y) const
     {
         std::string name;
-        while (*start != '"')
+        while (*start != '"' && !(*(start - 1) == '\\' && *start == '"'))
         {
             name += *start;
             ++start;
