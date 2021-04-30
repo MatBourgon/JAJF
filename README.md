@@ -1,4 +1,7 @@
 ## JAJF - Just another JSON Format
+
+### This was created more-so as practice, but I've come to use this in my own projects. Thus, I've released it and plan on touching it up whenever I notice any bugs.
+
 ### Quick setup:
 
 1. Add JAJF.h and JAJF.cpp to your project
